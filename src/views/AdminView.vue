@@ -351,7 +351,7 @@ const activeNotebookId = ref('main');
 const editing = ref(false);
 const saving = ref(false);
 const editingEntryId = ref('');
-const idSuffix = ref(Date.now().toString().slice(-3).padStart(3, '0'));
+const idSuffix = ref(createIdSuffix());
 const coverInput = ref<HTMLInputElement | null>(null);
 const bodyInput = ref<HTMLInputElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -369,6 +369,16 @@ const pendingAction = ref<null | (() => void | Promise<void>)>(null);
 const repoConfig = reactive<GitHubRepoConfig>({ ...session.config });
 
 const defaultEntries: DiaryEntry[] = [];
+
+function randomIdPart() {
+  const bytes = new Uint32Array(1);
+  window.crypto?.getRandomValues(bytes);
+  return (bytes[0] || Math.floor(Math.random() * 0xffffffff)).toString(36).padStart(7, '0');
+}
+
+function createIdSuffix(date = new Date()) {
+  return `${dayjs(date).format('YYYYMMDDHHmmssSSS')}-${randomIdPart()}`;
+}
 
 const normalizeEntries = (entries: DiaryEntry[]) =>
   entries.map((entry) => {
@@ -681,7 +691,7 @@ const restoreSessionDraft = async () => {
       activeNotebookId.value = draft.activeNotebookId;
     }
     editingEntryId.value = draft.editingEntryId;
-    idSuffix.value = draft.idSuffix || Date.now().toString().slice(-3).padStart(3, '0');
+    idSuffix.value = draft.idSuffix || createIdSuffix();
     form.title = draft.form.title || '';
     form.date = draft.form.date || dayjs().format('YYYY-MM-DD');
     form.dayOfWeek = draft.form.dayOfWeek || weekName(form.date);
@@ -794,7 +804,7 @@ const newPost = () => {
     form.location = '';
     form.createdAt = now;
     form.updatedAt = now;
-    idSuffix.value = Date.now().toString().slice(-3).padStart(3, '0');
+    idSuffix.value = createIdSuffix(new Date(now));
     editor.value?.commands.setContent('<p></p>');
     editing.value = true;
     await nextTick();
