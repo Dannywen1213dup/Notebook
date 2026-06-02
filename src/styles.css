@@ -392,27 +392,27 @@ a {
   margin-left: 8px;
 }
 
-.location-tile {
+.recent-note-tile {
   position: relative;
-  height: 128px;
+  min-height: 128px;
   margin-bottom: 18px;
   overflow: hidden;
-  background:
-    radial-gradient(#cbd5e1 1px, transparent 1px),
-    #e5f0d9;
-  background-size: 10px 10px;
+  background: linear-gradient(135deg, #fff5f7 0%, #eef7ff 100%);
   border-radius: 24px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
-.location-tile::after {
+.recent-note-tile::after {
   position: absolute;
   inset: 0;
   content: "";
-  background: rgba(229, 240, 217, 0.5);
+  background:
+    radial-gradient(rgba(148, 163, 184, 0.18) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+  background-size: 12px 12px, auto;
 }
 
-.location-label {
+.recent-note-label {
   position: absolute;
   top: 12px;
   left: 12px;
@@ -429,38 +429,49 @@ a {
   backdrop-filter: blur(4px);
 }
 
-.location-label span {
-  color: #6b7280;
-}
-
-.map-marker {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+.recent-note-content {
+  position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: #fff;
-  background: #facc15;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14);
-  transform: translate(-50%, -50%);
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 128px;
+  padding: 48px 14px 14px;
 }
 
-.location-tile small {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  z-index: 1;
-  padding: 0 4px;
+.recent-note-content strong {
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 16px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-note-content span {
+  margin-top: 5px;
+  color: #8b95a7;
+  font-size: 11px;
+}
+
+.recent-note-content p {
+  display: -webkit-box;
+  margin: 8px 0 0;
   color: #6b7280;
-  font-size: 10px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 4px;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.recent-note-content.empty {
+  justify-content: center;
+  padding-top: 38px;
+}
+
+.recent-note-content.empty span {
+  color: #9ca3af;
 }
 
 .notebook-nav {
@@ -945,7 +956,7 @@ a {
 .toolbar-mid {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   color: #4b5563;
 }
 
@@ -979,6 +990,51 @@ a {
 .toolbar-mid button.active {
   color: #2563eb;
   background: #eff6ff;
+}
+
+.font-size-select {
+  height: 32px;
+  padding: 0 26px 0 10px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  outline: 0;
+}
+
+.font-size-select:focus {
+  border-color: #93c5fd;
+}
+
+.color-control {
+  position: relative;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.color-control span {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.18);
+}
+
+.color-control input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .save-check {
@@ -1122,13 +1178,15 @@ a {
 .editable-area {
   width: 100%;
   min-height: 260px;
-  color: #374151;
-  line-height: 1.75;
+  color: #2f3a4a;
+  font-family: ui-serif, "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+  font-size: 16px;
+  line-height: 1.7;
   outline: none;
 }
 
 .editable-area p {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .editable-area img {
@@ -1140,17 +1198,44 @@ a {
 }
 
 .editable-area pre {
+  position: relative;
   overflow-x: auto;
-  margin: 14px 0;
-  padding: 14px 16px;
-  color: #e5e7eb;
-  background: #111827;
-  border-radius: 12px;
+  margin: 12px 0 14px;
+  padding: 38px 16px 12px 44px;
+  color: #263142;
+  background: #f3f5f7;
+  border: 1px solid #d9dee7;
+  border-radius: 8px;
+  box-shadow: inset 32px 0 0 #eef1f5;
+}
+
+.editable-area pre::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 28px;
+  padding-left: 14px;
+  color: #64748b;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 28px;
+  content: "代码";
+  background: #eef1f5;
+  border-bottom: 1px solid #d9dee7;
 }
 
 .editable-area code {
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 13px;
+  line-height: 1.42;
+}
+
+.editable-area pre code {
+  display: block;
+  color: inherit;
+  white-space: pre;
 }
 
 @media (max-width: 720px) {

@@ -25,15 +25,20 @@
             </small>
           </section>
 
-          <section class="location-tile">
-            <div class="location-label">
-              <MapPin :size="16" />
-              地点 <span>{{ uniqueIpLocationCount }}</span>
+          <section class="recent-note-tile">
+            <div class="recent-note-label">
+              <FileText :size="16" />
+              最近笔记
             </div>
-            <div class="map-marker">
-              <ShoppingBag :size="16" />
+            <div v-if="latestEntry" class="recent-note-content">
+              <strong>{{ latestEntry.title || '无标题' }}</strong>
+              <span>{{ listTimestampLabel(latestEntry) }}</span>
+              <p>{{ previewText(latestEntry) || '没有正文内容' }}</p>
             </div>
-            <small>{{ ipLocationSummaryText }}</small>
+            <div v-else class="recent-note-content empty">
+              <strong>还没有笔记</strong>
+              <span>写下第一篇后会显示在这里</span>
+            </div>
           </section>
 
           <section class="notebook-nav">
@@ -185,6 +190,15 @@
 
           <div class="toolbar-mid">
             <button type="button" title="添加照片" @click="triggerBodyUpload"><Camera :size="20" /></button>
+            <select v-model="selectedFontSize" class="font-size-select" title="字号" @change="applyFontSize">
+              <option v-for="size in fontSizeOptions" :key="size.value" :value="size.value">
+                {{ size.label }}
+              </option>
+            </select>
+            <label class="color-control" title="字体颜色">
+              <span :style="{ backgroundColor: selectedTextColor }"></span>
+              <input v-model="selectedTextColor" type="color" @input="applyTextColor" />
+            </label>
             <button
               type="button"
               title="加粗"
@@ -267,6 +281,7 @@
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import dayjs from 'dayjs';
 import { Modal } from 'ant-design-vue';
+import { Color, FontSize, TextStyle } from '@tiptap/extension-text-style';
 import Image from '@tiptap/extension-image';
 import { EditorContent, useEditor, type JSONContent } from '@tiptap/vue-3';
 import StarterKit from '@tiptap/starter-kit';
@@ -306,6 +321,15 @@ const DRAFT_KEY = 'notetaker.sessionDraft.v2';
 const BODY_IMAGE_LIMIT = 1024 * 1024;
 const COVER_IMAGE_LIMIT = 220 * 1024;
 const CHINESE_MONTHS = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+const fontSizeOptions = [
+  { label: '12', value: '12px' },
+  { label: '14', value: '14px' },
+  { label: '16', value: '16px' },
+  { label: '18', value: '18px' },
+  { label: '20', value: '20px' },
+  { label: '24', value: '24px' },
+  { label: '28', value: '28px' },
+];
 interface SessionDraft {
   activeNotebookId: string;
   editingEntryId: string;
@@ -363,6 +387,8 @@ const authValidated = ref(false);
 const authChecking = ref(false);
 const searchQuery = ref('');
 const searchActive = ref(false);
+const selectedFontSize = ref('16px');
+const selectedTextColor = ref('#374151');
 const deletedView = ref(false);
 const deleteNotebookMode = ref(false);
 const editorRevision = ref(0);
@@ -429,7 +455,13 @@ const form = reactive({
 });
 
 const editor = useEditor({
-  extensions: [StarterKit, Image.configure({ inline: false, allowBase64: true })],
+  extensions: [
+    StarterKit,
+    TextStyle,
+    Color,
+    FontSize,
+    Image.configure({ inline: false, allowBase64: true }),
+  ],
   content: '<p></p>',
   onUpdate: () => {
     editorRevision.value += 1;
@@ -510,6 +542,9 @@ const sortedActiveEntries = computed(() => {
     })
     .sort((a, b) => timestampForSort(b) - timestampForSort(a));
 });
+const latestEntry = computed(() =>
+  [...visibleEntries.value].sort((a, b) => latestActivityTime(b) - latestActivityTime(a))[0],
+);
 
 const diaryPayload = computed<DiaryEntry>(() => {
   void editorRevision.value;
@@ -546,6 +581,14 @@ const clearLocalCache = () => {
     .filter((key) => key.startsWith('notetaker.'))
     .forEach((key) => sessionStorage.removeItem(key));
   window.location.reload();
+};
+
+const applyFontSize = () => {
+  editor.value?.chain().focus().setFontSize(selectedFontSize.value).run();
+};
+
+const applyTextColor = () => {
+  editor.value?.chain().focus().setColor(selectedTextColor.value).run();
 };
 
 const collapseSearch = () => {
@@ -1098,6 +1141,12 @@ function listTimestampLabel(entry: DiaryEntry) {
 
 function timestampForSort(entry: DiaryEntry) {
   const source = entry.createdAt || defaultTimestampForDate(entry.date);
+  const value = dayjs(source).valueOf();
+  return Number.isFinite(value) ? value : 0;
+}
+
+function latestActivityTime(entry: DiaryEntry) {
+  const source = entry.updatedAt || entry.createdAt || defaultTimestampForDate(entry.date);
   const value = dayjs(source).valueOf();
   return Number.isFinite(value) ? value : 0;
 }
