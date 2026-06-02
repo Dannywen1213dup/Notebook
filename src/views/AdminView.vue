@@ -53,7 +53,7 @@
               :key="notebook.id"
               type="button"
               class="nav-row"
-              :class="{ active: notebook.id === activeNotebookId }"
+              :class="{ active: !deletedView && notebook.id === activeNotebookId }"
               @click="selectNotebook(notebook.id)"
               @dblclick.stop="renameNotebook(notebook)"
             >
