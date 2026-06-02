@@ -175,7 +175,7 @@ export const saveDiaryToGitHub = async (
 export const loadPublishedDiaryIndex = async (): Promise<DiaryIndex | null> => {
   const baseUrl = import.meta.env.BASE_URL || '/';
   const indexUrl = `${baseUrl.replace(/\/?$/, '/')}${INDEX_PATH}?v=${Date.now()}`;
-  const response = await fetch(indexUrl, { cache: 'no-store' });
+  const response = await window.fetch(indexUrl, { cache: 'no-store' });
   if (!response.ok) return null;
   const parsed = (await response.json()) as DiaryIndex;
   return {
