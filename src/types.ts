@@ -42,6 +42,11 @@ export interface DiaryEntry {
   content: JSONContent;
 }
 
+export interface DiaryIndex {
+  generatedAt: string;
+  entries: DiaryEntry[];
+}
+
 export interface GitHubRepoConfig {
   owner: string;
   repo: string;

@@ -290,7 +290,7 @@ import {
 } from '@lucide/vue';
 import type { DiaryEntry, GitHubRepoConfig, Mood, Notebook } from '../types';
 import { logout, saveRepoConfig, saveToken, session } from '../stores/session';
-import { saveDiaryToGitHub, verifyGitHubWriteAccess } from '../services/github';
+import { loadPublishedDiaryIndex, saveDiaryToGitHub, verifyGitHubWriteAccess } from '../services/github';
 import { fetchIpLocation } from '../services/ipLocation';
 
 type NotebookView = Notebook & {
@@ -599,6 +599,50 @@ const persistNotebooks = () => {
 
 const persistEntries = () => {
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(sampleEntries.value));
+};
+
+const mergeEntriesById = (primary: DiaryEntry[], fallback: DiaryEntry[]) => {
+  const merged = new Map<string, DiaryEntry>();
+  fallback.forEach((entry) => merged.set(entry.id, entry));
+  primary.forEach((entry) => merged.set(entry.id, entry));
+  return normalizeEntries([...merged.values()]);
+};
+
+const ensureNotebookForEntries = (entries: DiaryEntry[]) => {
+  const nextNotebooks = [...notebooks.value];
+  entries.forEach((entry) => {
+    const notebookId = entry.notebookId || 'main';
+    if (nextNotebooks.some((notebook) => notebook.id === notebookId)) return;
+    const notebookName = entry.notebookName || 'Notebook';
+    nextNotebooks.push({
+      id: notebookId,
+      name: notebookName,
+      path: `data/diaries/${slugify(notebookName)}`,
+      accent: '#3b82f6',
+      icon: markRaw(BookOpen),
+      iconClass: 'blue-icon',
+    });
+  });
+  notebooks.value = nextNotebooks;
+  persistNotebooks();
+};
+
+const loadPublishedEntries = async () => {
+  try {
+    const publishedIndex = await loadPublishedDiaryIndex();
+    if (!publishedIndex) return;
+    const remoteEntries = normalizeEntries(publishedIndex.entries);
+    sampleEntries.value = mergeEntriesById(remoteEntries, sampleEntries.value);
+    ensureNotebookForEntries(sampleEntries.value);
+    if (!visibleNotebooks.value.some((notebook) => notebook.id === activeNotebookId.value)) {
+      activeNotebookId.value = visibleNotebooks.value[0]?.id || 'main';
+    } else if (!activeEntries.value.length && remoteEntries[0]?.notebookId) {
+      activeNotebookId.value = remoteEntries[0].notebookId;
+    }
+    persistEntries();
+  } catch {
+    // Published data is a convenience sync; local/session drafts stay authoritative during failures.
+  }
 };
 
 const resetDraftSnapshot = () => {
@@ -1054,7 +1098,9 @@ watch(currentDraftSnapshot, () => {
 });
 
 onMounted(() => {
-  void restoreSessionDraft();
+  void loadPublishedEntries().finally(() => {
+    void restoreSessionDraft();
+  });
 });
 
 onBeforeUnmount(() => {
