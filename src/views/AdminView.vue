@@ -162,7 +162,7 @@
                 <h3>{{ entry.title || '无标题' }}</h3>
                 <p>{{ previewText(entry) }}</p>
                 <footer>
-                  <span>updated : {{ formatTimestamp(entry.updatedAt || entry.createdAt, entry.date) }}</span>
+                  <span>{{ listTimestampLabel(entry) }}</span>
                   <button type="button" class="entry-delete" @click.stop="deleteEntry(entry)">
                     <Trash2 :size="17" />
                   </button>
@@ -212,8 +212,8 @@
             <span>{{ formatDateForList(form.date, form.dayOfWeek) }}</span>
           </div>
           <div class="edit-meta">
-            <span>created : {{ formatTimestamp(form.createdAt, form.date) }}</span>
-            <span>updated : {{ formatTimestamp(form.updatedAt, form.date) }}</span>
+            <span>创建于 {{ formatTimestamp(form.createdAt, form.date) }}</span>
+            <span>更新于 {{ formatTimestamp(form.updatedAt, form.date) }}</span>
           </div>
 
           <div v-if="form.coverImage" class="edit-image-container" @click="triggerCoverUpload">
@@ -277,8 +277,6 @@ import {
   ChevronLeft,
   Code2,
   FileText,
-  Grid2X2,
-  Heart,
   MapPin,
   Menu,
   Plus,
@@ -287,7 +285,6 @@ import {
   Search,
   ShoppingBag,
   Star,
-  Sun,
   Trash2,
   X,
 } from '@lucide/vue';
@@ -301,14 +298,12 @@ type NotebookView = Notebook & {
   iconClass: string;
 };
 
-const NOTEBOOKS_KEY = 'notetaker.notebooks.v2';
-const ENTRIES_KEY = 'notetaker.entries.v2';
-const DRAFT_KEY = 'notetaker.sessionDraft.v1';
+const NOTEBOOKS_KEY = 'notetaker.notebooks.v3';
+const ENTRIES_KEY = 'notetaker.entries.v3';
+const DRAFT_KEY = 'notetaker.sessionDraft.v2';
 const BODY_IMAGE_LIMIT = 1024 * 1024;
 const COVER_IMAGE_LIMIT = 220 * 1024;
 const CHINESE_MONTHS = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
-const HIDDEN_SAMPLE_ENTRY_IDS = new Set(['baby-2023-09-26-001']);
-
 interface SessionDraft {
   activeNotebookId: string;
   editingEntryId: string;
@@ -327,16 +322,8 @@ interface SessionDraft {
   savedAt: string;
 }
 
-const defaultCover =
-  'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=900&q=80';
-const secondCover =
-  'https://images.unsplash.com/photo-1582283526019-94300e84b8d4?ixlib=rb-4.0.3&auto=format&fit=crop&w=900&q=80';
-
 const defaultNotebooks: NotebookView[] = [
-  { id: 'all', name: '所有条目', path: 'data/diaries/all', accent: '#64748b', icon: markRaw(Grid2X2), iconClass: 'gray-icon' },
-  { id: 'notes', name: '手记', path: 'data/diaries/notes', accent: '#3b82f6', icon: markRaw(BookOpen), iconClass: 'blue-icon' },
-  { id: 'mine', name: '我的每一天', path: 'data/diaries/mine', accent: '#14b8a6', icon: markRaw(Sun), iconClass: 'teal-icon' },
-  { id: 'baby', name: '和宝宝的每一天日常', path: 'data/diaries/baby-daily', accent: '#ef4444', icon: markRaw(Heart), iconClass: 'red-icon fill-red' },
+  { id: 'main', name: 'Notebook', path: 'data/diaries/notebook', accent: '#3b82f6', icon: markRaw(BookOpen), iconClass: 'blue-icon' },
 ];
 
 const iconForNotebook = (notebook: Notebook): NotebookView => {
@@ -360,7 +347,7 @@ const loadNotebooks = (): NotebookView[] => {
 };
 
 const notebooks = ref<NotebookView[]>(loadNotebooks());
-const activeNotebookId = ref('baby');
+const activeNotebookId = ref('main');
 const editing = ref(false);
 const saving = ref(false);
 const editingEntryId = ref('');
@@ -381,34 +368,7 @@ const initialDraftSnapshot = ref('');
 const pendingAction = ref<null | (() => void | Promise<void>)>(null);
 const repoConfig = reactive<GitHubRepoConfig>({ ...session.config });
 
-const defaultEntries: DiaryEntry[] = [
-  {
-    id: 'baby-2023-09-29-001',
-    notebookId: 'baby',
-    notebookName: '和宝宝的每一天日常',
-    title: '很爱您的牛new寿喜烧',
-    date: '2023-09-29',
-    dayOfWeek: '星期一',
-    month: '九月',
-    mood: 'happy',
-    location: '海宁银泰城 · 嘉兴市',
-    coverImage: defaultCover,
-    content: textDoc('很喜欢和你一起吃牛牛的时光\n感觉一整天的疲惫马上就好起来了\n\n虽然牛牛贵贵的，但是和你一起吃饭真的好开心哦'),
-  },
-  {
-    id: 'baby-2023-09-26-001',
-    notebookId: 'baby',
-    notebookName: '和宝宝的每一天日常',
-    title: '日子怎么可能和谁过都一样',
-    date: '2023-09-26',
-    dayOfWeek: '星期五',
-    month: '九月',
-    mood: 'normal',
-    location: '海宁银泰城 · 嘉兴市',
-    coverImage: secondCover,
-    content: textDoc('说吃就吃的海底捞哦\n两只很笨的猪点了海底捞外卖，过了很久都没收到！\n最后气之下过去吃了真的好喝的酸汤和番茄'),
-  },
-];
+const defaultEntries: DiaryEntry[] = [];
 
 const normalizeEntries = (entries: DiaryEntry[]) =>
   entries.map((entry) => {
@@ -429,9 +389,7 @@ const normalizeEntries = (entries: DiaryEntry[]) =>
           }
         : undefined,
     };
-    return HIDDEN_SAMPLE_ENTRY_IDS.has(entry.id) && !normalized.deletedAt
-      ? { ...normalized, deletedAt: new Date(0).toISOString() }
-      : normalized;
+    return normalized;
   });
 
 const loadEntries = () => {
@@ -470,16 +428,6 @@ const editor = useEditor({
     },
   },
 });
-
-function textDoc(value: string): JSONContent {
-  return {
-    type: 'doc',
-    content: value.split('\n\n').map((paragraph) => ({
-      type: 'paragraph',
-      content: paragraph ? [{ type: 'text', text: paragraph }] : undefined,
-    })),
-  };
-}
 
 const visibleNotebooks = computed(() => notebooks.value.filter((notebook) => !notebook.deletedAt));
 const activeNotebook = computed(
@@ -548,7 +496,7 @@ const sortedActiveEntries = computed(() => {
       if (!query) return true;
       return entry.title.toLowerCase().includes(query);
     })
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .sort((a, b) => timestampForSort(b) - timestampForSort(a));
 });
 
 const diaryPayload = computed<DiaryEntry>(() => {
@@ -1065,6 +1013,26 @@ function formatTimestamp(timestamp?: string, fallbackDate?: string) {
   const d = dayjs(source);
   if (!d.isValid()) return '';
   return d.format('YYYY.MM.DD HH:mm');
+}
+
+function timestampsMatch(a?: string, b?: string) {
+  if (!a || !b) return true;
+  return Math.abs(dayjs(a).valueOf() - dayjs(b).valueOf()) < 1000;
+}
+
+function listTimestampLabel(entry: DiaryEntry) {
+  const createdAt = entry.createdAt || defaultTimestampForDate(entry.date);
+  const updatedAt = entry.updatedAt || createdAt;
+  if (timestampsMatch(createdAt, updatedAt)) {
+    return `创建于 ${formatTimestamp(createdAt, entry.date)}`;
+  }
+  return `更新于 ${formatTimestamp(updatedAt, entry.date)}`;
+}
+
+function timestampForSort(entry: DiaryEntry) {
+  const source = entry.createdAt || defaultTimestampForDate(entry.date);
+  const value = dayjs(source).valueOf();
+  return Number.isFinite(value) ? value : 0;
 }
 
 function monthLabel(entry: DiaryEntry) {

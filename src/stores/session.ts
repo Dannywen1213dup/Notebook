@@ -2,7 +2,7 @@ import { computed, reactive } from 'vue';
 import type { GitHubRepoConfig } from '../types';
 
 const TOKEN_KEY = 'notetaker.githubToken';
-const CONFIG_KEY = 'notetaker.githubConfig';
+const CONFIG_KEY = 'notetaker.githubConfig.v2';
 
 const defaultConfig: GitHubRepoConfig = {
   owner: 'Dannywen1213dup',
