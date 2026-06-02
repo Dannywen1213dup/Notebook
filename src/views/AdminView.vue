@@ -188,48 +188,44 @@
             <button type="button" @click="closeEditor"><ChevronLeft :size="25" /></button>
           </div>
 
-          <div class="toolbar-mid">
-            <button type="button" title="添加照片" @click="triggerBodyUpload"><Camera :size="20" /></button>
-            <select v-model="selectedFontSize" class="font-size-select" title="字号" @change="applyFontSize">
-              <option v-for="size in fontSizeOptions" :key="size.value" :value="size.value">
-                {{ size.label }}
-              </option>
-            </select>
-            <label class="color-control" title="字体颜色">
-              <span :style="{ backgroundColor: selectedTextColor }"></span>
-              <input v-model="selectedTextColor" type="color" @input="applyTextColor" />
-            </label>
-            <button
-              type="button"
-              title="加粗"
-              :class="{ active: editor?.isActive('bold') }"
-              @click="editor?.chain().focus().toggleBold().run()"
-            >
-              <Bold :size="20" />
-            </button>
-            <button
-              type="button"
-              title="代码块"
-              :class="{ active: editor?.isActive('codeBlock') }"
-              @click="editor?.chain().focus().toggleCodeBlock().run()"
-            >
-              <Code2 :size="20" />
-            </button>
-          </div>
-
           <button type="button" class="save-check" :disabled="saving || !isDirty" @click="submitDiary">
             <Check :size="21" />
           </button>
         </header>
 
+        <div class="format-toolbar">
+          <button type="button" title="添加照片" @click="triggerBodyUpload"><Camera :size="20" /></button>
+          <select v-model="selectedFontSize" class="font-size-select" title="字号" @change="applyFontSize">
+            <option v-for="size in fontSizeOptions" :key="size.value" :value="size.value">
+              {{ size.label }}
+            </option>
+          </select>
+          <label class="color-control" title="字体颜色">
+            <span :style="{ backgroundColor: selectedTextColor }"></span>
+            <input v-model="selectedTextColor" type="color" @input="applyTextColor" />
+          </label>
+          <button
+            type="button"
+            title="加粗"
+            :class="{ active: editor?.isActive('bold') }"
+            @click="editor?.chain().focus().toggleBold().run()"
+          >
+            <Bold :size="20" />
+          </button>
+          <button
+            type="button"
+            title="代码块"
+            :class="{ active: editor?.isActive('codeBlock') }"
+            @click="editor?.chain().focus().toggleCodeBlock().run()"
+          >
+            <Code2 :size="20" />
+          </button>
+        </div>
+
         <div class="edit-scroll">
           <div class="edit-date">
             <Calendar :size="16" />
             <span>{{ formatDateForList(form.date, form.dayOfWeek) }}</span>
-          </div>
-          <div class="edit-meta">
-            <span>创建于 {{ formatTimestamp(form.createdAt, form.date) }}</span>
-            <span>更新于 {{ formatTimestamp(form.updatedAt, form.date) }}</span>
           </div>
 
           <div v-if="form.coverImage" class="edit-image-container" @click="triggerCoverUpload">
@@ -255,6 +251,10 @@
           />
 
           <EditorContent class="edit-content" :editor="editor" />
+          <div class="edit-meta">
+            <span>创建于 {{ formatTimestamp(form.createdAt, form.date) }}</span>
+            <span>更新于 {{ formatTimestamp(form.updatedAt, form.date) }}</span>
+          </div>
         </div>
       </section>
     </div>
