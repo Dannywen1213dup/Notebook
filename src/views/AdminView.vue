@@ -78,7 +78,9 @@
         </div>
 
         <div class="sidebar-bottom">
-          <Star :size="20" />
+          <button type="button" title="清空本地缓存" @click="clearLocalCache">
+            <Eraser :size="20" />
+          </button>
         </div>
       </aside>
 
@@ -276,6 +278,7 @@ import {
   Check,
   ChevronLeft,
   Code2,
+  Eraser,
   FileText,
   MapPin,
   Menu,
@@ -284,7 +287,6 @@ import {
   RotateCcw,
   Search,
   ShoppingBag,
-  Star,
   Trash2,
   X,
 } from '@lucide/vue';
@@ -533,6 +535,17 @@ const isDirty = computed(() => editing.value && currentDraftSnapshot.value !== i
 
 const showErrorModal = (title: string, content: string) => {
   Modal.error({ title, content });
+};
+
+const clearLocalCache = () => {
+  if (!window.confirm('清空本地缓存？GitHub 上已经提交的数据不会删除，页面会刷新。')) return;
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith('notetaker.'))
+    .forEach((key) => localStorage.removeItem(key));
+  Object.keys(sessionStorage)
+    .filter((key) => key.startsWith('notetaker.'))
+    .forEach((key) => sessionStorage.removeItem(key));
+  window.location.reload();
 };
 
 const collapseSearch = () => {

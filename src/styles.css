@@ -596,14 +596,28 @@ a {
   padding: 16px 8px 0;
 }
 
+.sidebar-bottom button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: #1f2937;
+  place-items: center;
+  background: #fff;
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.sidebar-bottom button:hover {
+  color: #2563eb;
+}
+
 .sidebar-bottom svg {
   width: 32px;
   height: 32px;
   padding: 6px;
-  color: #1f2937;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .list-view {
