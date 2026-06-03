@@ -1208,17 +1208,13 @@ a {
 .editable-area pre {
   position: relative;
   overflow-x: auto;
-  margin: 14px 0 16px;
-  padding: 46px 18px 16px 42px;
+  margin: 12px 0 14px;
+  padding: 38px 16px 14px;
   color: #f3f6fb;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 30px, transparent 30px),
-    #17181a;
+  background: #17181a;
   border: 1px solid #26282d;
-  border-radius: 12px;
-  box-shadow:
-    0 10px 22px rgba(15, 23, 42, 0.12),
-    inset 30px 0 0 rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
 }
 
 .editable-area pre::before {
@@ -1226,31 +1222,31 @@ a {
   top: 0;
   right: 0;
   left: 0;
-  height: 36px;
-  padding-left: 42px;
+  height: 30px;
+  padding-left: 16px;
   color: #f8fafc;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 36px;
+  line-height: 30px;
   content: "</>  CODE";
   background: #1c1d20;
   border-bottom: 1px solid #2b2d33;
-  border-radius: 12px 12px 0 0;
+  border-radius: 10px 10px 0 0;
 }
 
 .editable-area pre::after {
   position: absolute;
-  top: 11px;
-  right: 15px;
-  width: 13px;
-  height: 13px;
+  top: 9px;
+  right: 13px;
+  width: 11px;
+  height: 11px;
   content: "";
   border: 2px solid #e5e7eb;
   border-radius: 3px;
   box-shadow:
-    -5px 5px 0 -2px #1c1d20,
-    -5px 5px 0 0 #e5e7eb;
+    -4px 4px 0 -2px #1c1d20,
+    -4px 4px 0 0 #e5e7eb;
   opacity: 0.9;
 }
 
