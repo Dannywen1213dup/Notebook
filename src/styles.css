@@ -961,11 +961,12 @@ a {
 }
 
 .format-toolbar {
+  position: absolute;
+  left: 50%;
+  max-width: calc(100% - 112px);
+  overflow-x: auto;
   justify-content: center;
-  min-height: 48px;
-  padding: 8px 16px;
-  background: #f7f8fa;
-  border-bottom: 1px solid #eef0f4;
+  transform: translateX(-50%);
 }
 
 .toolbar-left button,
@@ -1207,13 +1208,17 @@ a {
 .editable-area pre {
   position: relative;
   overflow-x: auto;
-  margin: 12px 0 14px;
-  padding: 38px 16px 12px 44px;
-  color: #263142;
-  background: #f3f5f7;
-  border: 1px solid #d9dee7;
-  border-radius: 8px;
-  box-shadow: inset 32px 0 0 #eef1f5;
+  margin: 14px 0 16px;
+  padding: 46px 18px 16px 42px;
+  color: #f3f6fb;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 30px, transparent 30px),
+    #17181a;
+  border: 1px solid #26282d;
+  border-radius: 12px;
+  box-shadow:
+    0 10px 22px rgba(15, 23, 42, 0.12),
+    inset 30px 0 0 rgba(255, 255, 255, 0.03);
 }
 
 .editable-area pre::before {
@@ -1221,22 +1226,38 @@ a {
   top: 0;
   right: 0;
   left: 0;
-  height: 28px;
-  padding-left: 14px;
-  color: #64748b;
+  height: 36px;
+  padding-left: 42px;
+  color: #f8fafc;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 28px;
-  content: "代码";
-  background: #eef1f5;
-  border-bottom: 1px solid #d9dee7;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 36px;
+  content: "</>  CODE";
+  background: #1c1d20;
+  border-bottom: 1px solid #2b2d33;
+  border-radius: 12px 12px 0 0;
+}
+
+.editable-area pre::after {
+  position: absolute;
+  top: 11px;
+  right: 15px;
+  width: 13px;
+  height: 13px;
+  content: "";
+  border: 2px solid #e5e7eb;
+  border-radius: 3px;
+  box-shadow:
+    -5px 5px 0 -2px #1c1d20,
+    -5px 5px 0 0 #e5e7eb;
+  opacity: 0.9;
 }
 
 .editable-area code {
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 13px;
-  line-height: 1.42;
+  font-family: "SFMono-Regular", "Cascadia Code", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+  font-size: 15px;
+  line-height: 1.55;
 }
 
 .editable-area pre code {
@@ -1324,6 +1345,7 @@ a {
     flex-wrap: nowrap;
     gap: 10px;
     justify-content: center;
+    max-width: calc(100% - 96px);
     overflow-x: auto;
   }
 
