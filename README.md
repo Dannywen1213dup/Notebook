@@ -1,18 +1,20 @@
 # Notebook
 
-Vue 3 diary notebook demo with Ant Design Vue, Tiptap, GitHub JSON storage, and GitHub Pages hosting.
+Static diary notebook built with plain HTML, CSS, and JavaScript. Diary data is stored as JSON under `public/data/` and can be served directly by GitHub Pages.
 
-## Development
-
-```bash
-npm install
-npm run dev
-```
-
-## Build
+## Run Locally
 
 ```bash
-npm run build
+python3 -m http.server 5174
 ```
 
-The production build is configured for GitHub Pages at `/Notebook/`.
+Then open `http://127.0.0.1:5174/`.
+
+## Data
+
+- Published index: `public/data/index.json`
+- Diary files: `public/data/diaries/**/*.json`
+- The browser loads `public/data/index.json` directly.
+- Saving uses the GitHub API to commit both the diary JSON and the index JSON back into `public/data/`.
+
+No Vue, Vite, TypeScript, or npm build step is required.
