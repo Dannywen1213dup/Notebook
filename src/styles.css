@@ -606,6 +606,7 @@ a {
 .sidebar-bottom {
   display: flex;
   justify-content: flex-start;
+  gap: 8px;
   padding: 16px 8px 0;
 }
 
@@ -625,6 +626,11 @@ a {
 
 .sidebar-bottom button:hover {
   color: #2563eb;
+}
+
+.sidebar-bottom button:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 
 .sidebar-bottom svg {
@@ -925,6 +931,17 @@ a {
   border: 0;
   border-radius: 999px;
   cursor: pointer;
+}
+
+.deleted-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deleted-actions button.danger {
+  color: #dc2626;
+  background: #fef2f2;
 }
 
 .edit-view {

@@ -70,6 +70,7 @@ const state = {
   selectedTextColor: "#374151",
   searchQuery: "",
   initialSnapshot: "",
+  deploying: false,
   form: freshForm(),
 };
 
@@ -254,13 +255,16 @@ function handleClick(event) {
   if (action === "delete-notebook") deleteNotebook(id);
   if (action === "show-deleted") showDeletedView();
   if (action === "restore-notebook") restoreNotebook(id);
+  if (action === "permanent-delete-notebook") permanentDeleteNotebook(id);
   if (action === "open-post") openPost(id);
   if (action === "clear-cache") clearLocalCache();
+  if (action === "deploy-pages") deployPages();
   if (action === "delete-entry") {
     event.stopPropagation();
     deleteEntry(id);
   }
   if (action === "restore-entry") restoreEntry(id);
+  if (action === "permanent-delete-entry") permanentDeleteEntry(id);
   if (action === "close-editor") closeEditor();
   if (action === "save-post") savePost();
   if (action === "cover-upload") els.coverInput.click();
@@ -357,6 +361,7 @@ function renderSidebar() {
     </div>
     <div class="sidebar-bottom">
       <button type="button" data-action="clear-cache" title="清空本地缓存">${icon("eraser")}</button>
+      <button type="button" data-action="deploy-pages" title="刷新部署到 GitHub Pages" ${state.deploying ? "disabled" : ""}>${icon("refresh")}</button>
     </div>
   `;
 }
@@ -376,7 +381,10 @@ function renderList() {
                     <article class="deleted-row">
                       ${icon("book")}
                       <div><strong>${escapeHtml(notebook.name)}</strong><span>日记本 · ${escapeHtml(notebook.path)}</span></div>
-                      <button type="button" data-action="restore-notebook" data-id="${escapeAttr(notebook.id)}">${icon("rotate")} 恢复</button>
+                      <div class="deleted-actions">
+                        <button type="button" data-action="restore-notebook" data-id="${escapeAttr(notebook.id)}">${icon("rotate")} 恢复</button>
+                        <button type="button" class="danger" data-action="permanent-delete-notebook" data-id="${escapeAttr(notebook.id)}">${icon("trash")} 删除</button>
+                      </div>
                     </article>
                   `,
                 ),
@@ -385,7 +393,10 @@ function renderList() {
                     <article class="deleted-row">
                       ${icon("file-text")}
                       <div><strong>${escapeHtml(entry.title || "无标题")}</strong><span>${listTimestampLabel(entry)}</span></div>
-                      <button type="button" data-action="restore-entry" data-id="${escapeAttr(entry.id)}">${icon("rotate")} 恢复</button>
+                      <div class="deleted-actions">
+                        <button type="button" data-action="restore-entry" data-id="${escapeAttr(entry.id)}">${icon("rotate")} 恢复</button>
+                        <button type="button" class="danger" data-action="permanent-delete-entry" data-id="${escapeAttr(entry.id)}">${icon("trash")} 删除</button>
+                      </div>
                     </article>
                   `,
                 ),
@@ -664,6 +675,40 @@ function restoreEntry(id) {
   render();
 }
 
+async function permanentDeleteEntry(id) {
+  const entry = state.entries.find((item) => item.id === id);
+  if (!entry || !window.confirm(`彻底删除 ${entry.title || "无标题"}？这个操作不能恢复。`)) return;
+  try {
+    const token = await ensureToken();
+    await deleteEntriesFromGitHub(token, loadRepoConfig(), [entry]);
+    state.entries = state.entries.filter((item) => item.id !== id);
+    persistEntries();
+    render();
+    showToast("已彻底删除");
+  } catch (error) {
+    showToast(`彻底删除失败：${error.message || "未知错误"}`);
+  }
+}
+
+async function permanentDeleteNotebook(id) {
+  const notebook = state.notebooks.find((item) => item.id === id);
+  if (!notebook || !window.confirm(`彻底删除 ${notebook.name} 和里面的笔记？这个操作不能恢复。`)) return;
+  const notebookEntries = state.entries.filter((entry) => (entry.notebookId || "main") === id);
+  try {
+    const token = await ensureToken();
+    await deleteEntriesFromGitHub(token, loadRepoConfig(), notebookEntries);
+    state.entries = state.entries.filter((entry) => (entry.notebookId || "main") !== id);
+    state.notebooks = state.notebooks.filter((item) => item.id !== id);
+    state.activeNotebookId = getVisibleNotebooks()[0]?.id || "main";
+    persistEntries();
+    persistNotebooks();
+    render();
+    showToast("已彻底删除");
+  } catch (error) {
+    showToast(`彻底删除失败：${error.message || "未知错误"}`);
+  }
+}
+
 function clearLocalCache() {
   if (!window.confirm("清空本地缓存？GitHub 上的 JSON 不会被删除。")) return;
   Object.values(STORAGE).forEach((key) => localStorage.removeItem(key));
@@ -675,6 +720,28 @@ function clearLocalCache() {
   state.editing = false;
   render();
   void loadPublishedEntries().then(render);
+}
+
+async function deployPages() {
+  if (state.deploying) return;
+  state.deploying = true;
+  renderSidebar();
+  try {
+    const token = await ensureToken();
+    const config = loadRepoConfig();
+    try {
+      await requestPagesBuild(token, config);
+      showToast("已触发 GitHub Pages 部署");
+    } catch {
+      await createDeployTriggerCommit(token, config);
+      showToast("已用 main 空提交触发部署");
+    }
+  } catch (error) {
+    showToast(`部署触发失败：${error.message || "未知错误"}`);
+  } finally {
+    state.deploying = false;
+    renderSidebar();
+  }
 }
 
 function applyFontSize(size) {
@@ -1124,6 +1191,85 @@ async function saveDiaryToGitHub(token, config, diary) {
   });
 }
 
+async function deleteEntriesFromGitHub(token, config, entries) {
+  const repoUrl = `https://api.github.com/repos/${config.owner}/${config.repo}`;
+  const ref = await githubFetch(token, `${repoUrl}/git/ref/heads/${encodeURIComponent(config.branch)}`);
+  const parentSha = ref.object.sha;
+  const commit = await githubFetch(token, `${repoUrl}/git/commits/${parentSha}`);
+  const treeResponse = await githubFetch(token, `${repoUrl}/git/trees/${commit.tree.sha}?recursive=1`);
+  const existingPaths = new Set((treeResponse.tree || []).map((item) => item.path));
+  const removeIds = new Set(entries.map((entry) => entry.id));
+  const currentIndex = await fetchDiaryIndexFromGitHub(token, config);
+  const nextIndex = {
+    generatedAt: new Date().toISOString(),
+    entries: (currentIndex.entries || []).filter((entry) => !removeIds.has(entry.id)),
+  };
+  const deletionItems = entries
+    .map((entry) => diaryPathForEntry(entry, config))
+    .filter((path) => existingPaths.has(path))
+    .map((path) => ({
+      path,
+      mode: "100644",
+      type: "blob",
+      sha: null,
+    }));
+
+  const tree = await githubFetch(token, `${repoUrl}/git/trees`, {
+    method: "POST",
+    body: JSON.stringify({
+      base_tree: commit.tree.sha,
+      tree: [
+        ...deletionItems,
+        {
+          path: REPO_INDEX_PATH,
+          mode: "100644",
+          type: "blob",
+          content: JSON.stringify(nextIndex, null, 2),
+        },
+      ],
+    }),
+  });
+
+  const nextCommit = await githubFetch(token, `${repoUrl}/git/commits`, {
+    method: "POST",
+    body: JSON.stringify({
+      message: `Delete diary ${entries.map((entry) => entry.id).join(", ") || "entries"}`,
+      tree: tree.sha,
+      parents: [parentSha],
+    }),
+  });
+
+  await githubFetch(token, `${repoUrl}/git/refs/heads/${encodeURIComponent(config.branch)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ sha: nextCommit.sha, force: false }),
+  });
+}
+
+async function requestPagesBuild(token, config) {
+  return githubFetch(token, `https://api.github.com/repos/${config.owner}/${config.repo}/pages/builds`, {
+    method: "POST",
+  });
+}
+
+async function createDeployTriggerCommit(token, config) {
+  const repoUrl = `https://api.github.com/repos/${config.owner}/${config.repo}`;
+  const ref = await githubFetch(token, `${repoUrl}/git/ref/heads/${encodeURIComponent(config.branch)}`);
+  const parentSha = ref.object.sha;
+  const commit = await githubFetch(token, `${repoUrl}/git/commits/${parentSha}`);
+  const nextCommit = await githubFetch(token, `${repoUrl}/git/commits`, {
+    method: "POST",
+    body: JSON.stringify({
+      message: "Deploy GitHub Pages",
+      tree: commit.tree.sha,
+      parents: [parentSha],
+    }),
+  });
+  await githubFetch(token, `${repoUrl}/git/refs/heads/${encodeURIComponent(config.branch)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ sha: nextCommit.sha, force: false }),
+  });
+}
+
 async function fetchDiaryIndexFromGitHub(token, config) {
   const repoUrl = `https://api.github.com/repos/${config.owner}/${config.repo}`;
   try {
@@ -1337,6 +1483,12 @@ function trimSlashes(value) {
   return value.replace(/^\/+|\/+$/g, "");
 }
 
+function diaryPathForEntry(entry, config) {
+  const notebook = state.notebooks.find((item) => item.id === (entry.notebookId || "main"));
+  const basePath = notebook?.path || config.basePath || DEFAULT_CONFIG.basePath;
+  return `${trimSlashes(basePath)}/${entry.id}.json`;
+}
+
 function readJson(raw) {
   if (!raw) return null;
   try {
@@ -1383,6 +1535,7 @@ function icon(name) {
     "file-text": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6M8 13h8M8 17h6" />',
     "x": '<path d="M18 6 6 18M6 6l12 12" />',
     "rotate": '<path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v6h6" />',
+    "refresh": '<path d="M21 12a9 9 0 0 1-15.3 6.4" /><path d="M3 12A9 9 0 0 1 18.3 5.6" /><path d="M21 5v7h-7" /><path d="M3 19v-7h7" />',
     "eraser": '<path d="m7 21-4-4 10-10 4 4-8 8" /><path d="M13 7l2-2a2.8 2.8 0 0 1 4 4l-2 2" /><path d="M9 21h12" />',
     "chevron-left": '<path d="m15 18-6-6 6-6" />',
     "camera": '<path d="M14.5 4 16 7h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h4l1.5-3z" /><circle cx="12" cy="14" r="4" />',
