@@ -953,7 +953,7 @@ async function loadPublishedEntries() {
     if (!response.ok) return;
     const index = await response.json();
     const remoteEntries = normalizeEntries(Array.isArray(index.entries) ? index.entries : []);
-    state.entries = mergeEntriesById(remoteEntries, state.entries);
+    state.entries = remoteEntries;
     ensureNotebookForEntries(state.entries);
     if (!getVisibleNotebooks().some((notebook) => notebook.id === state.activeNotebookId)) {
       state.activeNotebookId = getVisibleNotebooks()[0]?.id || "main";
@@ -984,13 +984,6 @@ function normalizeEntries(entries) {
       metadata: entry.metadata ? { ...entry.metadata, ipLocationHistory } : undefined,
     };
   });
-}
-
-function mergeEntriesById(primary, fallback) {
-  const map = new Map();
-  fallback.forEach((entry) => map.set(entry.id, entry));
-  primary.forEach((entry) => map.set(entry.id, entry));
-  return normalizeEntries([...map.values()]);
 }
 
 function ensureNotebookForEntries(entries) {
